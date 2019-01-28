@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QString>
 
 #include "htmlparser.h"
 #include "htmltag.h"
@@ -8,7 +9,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    QString html = R"~(
+    QString html = QString::fromUtf8(R"~(
                    <!DOCTYPE HTML>
                    <html>
                    <head>
@@ -22,11 +23,11 @@ int main(int argc, char *argv[])
                    <p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">dfg</p>
                     <img src="image.png" />
                     <p id="p1">
-                    <b>Sample</b> paragraph
+                    <b>Sample</b> paragraph متن فارسی
             <img src="image.png" />
                    </p>
                    </body>
-                   </html>)~";
+                   </html>)~");
 
     HtmlParser h;
     h.setHtml(html);
