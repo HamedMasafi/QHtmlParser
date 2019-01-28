@@ -17,8 +17,9 @@ public:
     QString html() const;
     void setHtml(const QString &html);
 
-    HtmlTag *findElementById(const QString id);
-    QList<HtmlTag *> findElementsByTagName(const QString tagName);
+    HtmlTag *getElementById(const QString id);
+    QList<HtmlTag *> getElementsByTagName(const QString tagName);
+    QList<HtmlTag *> getElementsByClassName(const QString className);
 private:
     HtmlTag *parseTagBegin(QStringList &tokensList, int &i);
     void printTag(HtmlTag *tag, int level);

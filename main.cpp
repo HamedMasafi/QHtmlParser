@@ -31,9 +31,8 @@ int main(int argc, char *argv[])
     HtmlParser h;
     h.setHtml(html);
     h.parse();
-    QList<HtmlTag*> style = h.findElementsByTagName("p");
 
-    HtmlTag *p = h.findElementById("p1");
+    HtmlTag *p = h.getElementById("p1");
     qDebug() << "-----------";
     qDebug() << p->outterHtml();
     qDebug() << p->innerText();

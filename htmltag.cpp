@@ -11,6 +11,11 @@ QString HtmlTag::id() const
     return attributes.value("id");
 }
 
+void HtmlTag::addAttribute(const QString &name, const QString &value)
+{
+    attributes.insert(name.toLower(), value);
+}
+
 
 QString HtmlTag::outterHtml() const
 {

@@ -20,7 +20,7 @@ void HtmlParser::setHtml(const QString &html)
     _html = html;
 }
 
-HtmlTag *HtmlParser::findElementById(const QString id)
+HtmlTag *HtmlParser::getElementById(const QString id)
 {
     QList<HtmlTag*> ret;
     int f = 0;
@@ -30,12 +30,22 @@ HtmlTag *HtmlParser::findElementById(const QString id)
     return ret.size() ? ret.first() : nullptr;
 }
 
-QList<HtmlTag *> HtmlParser::findElementsByTagName(const QString tagName)
+QList<HtmlTag *> HtmlParser::getElementsByTagName(const QString tagName)
 {
     QList<HtmlTag*> ret;
     int f = 0;
     search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-       return t->name == tagName;
+       return t->name.compare(tagName, Qt::CaseInsensitive);
+    });
+    return ret;
+}
+
+QList<HtmlTag *> HtmlParser::getElementsByClassName(const QString className)
+{
+    QList<HtmlTag*> ret;
+    int f = 0;
+    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
+       return t->attributes.value("class").split(" ").contains(className, Qt::CaseInsensitive);
     });
     return ret;
 }
@@ -51,14 +61,11 @@ void HtmlParser::parse()
 
     for (int i = 0; i < _html.length(); ++i) {
         QChar ch = _html.at(i);
-        if (ch == '\n')
-            qDebug() << ch.category();
         if (ch.category() == QChar::Other_Control)
             continue;
 
         if (ch == "<") {
             if (!isInTag) {
-                qDebug() << "TEXT="<<lastToken;
                 if (!lastToken.trimmed().isEmpty())
                     tokensList.append(lastToken);
             }
@@ -130,7 +137,6 @@ void HtmlParser::parse()
             if (token != ">")
                 doctype.append(token + " ");
         }
-        qDebug() << "doc type is" << doctype.trimmed();
     }
     for (; i < tokensList.count(); ++i) {
         QString token = tokensList.at(i);
@@ -157,9 +163,6 @@ void HtmlParser::parse()
                     tags.append(tag);
                     if (tag->hasCloseTag)
                         stack.push(tag);
-
-                    if (tag->name == "style")
-                        qDebug() << "current token is" << tokensList.at(i + 1);
                 }
             }
         }
@@ -187,7 +190,6 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
     QMap<QString, QString> attrs;
     QString name, value;
     int step = 0;
-    qDebug() << "searching for" << tag->name;
     /*
 
     name

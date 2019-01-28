@@ -49,6 +49,7 @@ public:
     HtmlTag();
 
     QString id() const;
+    void addAttribute(const QString &name, const QString &value);
     QString outterHtml() const;
     QString innerHtml() const;
     QString innerText() const;
