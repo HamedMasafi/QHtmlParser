@@ -3,29 +3,13 @@
 
 #include <QMap>
 #include <QString>
+#include <functional>
 
-class Tag{
-public:
-    QString name;
-    QMap<QString, QString> attributes;
-    QList<Tag*> childs;
-    QString text;
-    bool hasCloseTag;
-    Tag *parent;
-
-    QString toString() const
-    {
-        QString ret = name;
-        foreach (QString k, attributes.keys())
-            ret.append(QString(" %1=\"%2\"").arg(k).arg(attributes.value(k)));
-        return ret;
-    }
-};
-
+class HtmlTag;
 class HtmlParser
 {
     QString _html;
-    Tag *_htmlTag;
+    HtmlTag *_htmlTag;
 public:
     HtmlParser();
     void parse();
@@ -33,9 +17,13 @@ public:
     QString html() const;
     void setHtml(const QString &html);
 
+    HtmlTag *findElementById(const QString id);
+    QList<HtmlTag *> findElementsByTagName(const QString tagName);
 private:
-    Tag *parseTagBegin(QStringList &tokensList, int &i);
-    void printTag(Tag *tag, int level);
+    HtmlTag *parseTagBegin(QStringList &tokensList, int &i);
+    void printTag(HtmlTag *tag, int level);
+
+    void search(QList<HtmlTag*> *tasg, HtmlTag *tag, int &flag, std::function<bool(const HtmlTag*, int&)> callback);
 };
 
 #endif // HTMLPARSER_H

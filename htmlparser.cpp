@@ -1,8 +1,14 @@
 #include "htmlparser.h"
+#include "htmltag.h"
 
 #include <QDebug>
 #include <QStack>
 #include <QStringList>
+
+HtmlParser::HtmlParser()
+{
+
+}
 
 QString HtmlParser::html() const
 {
@@ -14,11 +20,26 @@ void HtmlParser::setHtml(const QString &html)
     _html = html;
 }
 
-
-HtmlParser::HtmlParser()
+HtmlTag *HtmlParser::findElementById(const QString id)
 {
-
+    QList<HtmlTag*> ret;
+    int f = 0;
+    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
+       return t->id() == id;
+    });
+    return ret.size() ? ret.first() : nullptr;
 }
+
+QList<HtmlTag *> HtmlParser::findElementsByTagName(const QString tagName)
+{
+    QList<HtmlTag*> ret;
+    int f = 0;
+    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
+       return t->name == tagName;
+    });
+    return ret;
+}
+
 
 void HtmlParser::parse()
 {
@@ -27,7 +48,6 @@ void HtmlParser::parse()
     QChar::Category lastCat = QChar::Mark_SpacingCombining;
     bool isInQuoto = false;
     bool isInTag = false;
-
 
     for (int i = 0; i < _html.length(); ++i) {
         QChar ch = _html.at(i);
@@ -97,10 +117,22 @@ void HtmlParser::parse()
     qDebug() << "-----------";
     qDebug() << tokensList;//.join("\n");
 
-    QList<Tag*> tags;
-    QStack<Tag*> stack;
+    QList<HtmlTag*> tags;
+    QStack<HtmlTag*> stack;
     _htmlTag = nullptr;
-    for (int i = 0; i < tokensList.count(); ++i) {
+    QString doctype;
+    int i = 0;
+
+    if (tokensList.count() > 3 && tokensList.at(0) == "<" && tokensList.at(1) == "!") {
+        QString token;
+        while (token != ">") {
+            token = tokensList.at(++i);
+            if (token != ">")
+                doctype.append(token + " ");
+        }
+        qDebug() << "doc type is" << doctype.trimmed();
+    }
+    for (; i < tokensList.count(); ++i) {
         QString token = tokensList.at(i);
 
         if (token == "<") {
@@ -113,12 +145,12 @@ void HtmlParser::parse()
             if (tokensList.at(i + 1) == "/") {
                 stack.pop();
             } else {
-                Tag *tag = parseTagBegin(tokensList, i);
+                HtmlTag *tag = parseTagBegin(tokensList, i);
                 if (tag) {
                     if (!tags.size())
                         _htmlTag = tag;
                     if (stack.size()) {
-                        tag->parent = stack.top();
+                        tag->setParent(stack.top());
                         stack.top()->childs.append(tag);
                     }
 
@@ -135,16 +167,20 @@ void HtmlParser::parse()
         token = tokensList.at(i);
         if (token == ">"){
             isInTag = false;
-            if (tokensList.size() > i + 1 && tokensList.at(i + 1) != "<")
-                stack.top()->text = tokensList.at(i + 1).trimmed();
+            if (tokensList.size() > i + 1 && tokensList.at(i + 1) != "<") {
+                TextNode *textNode = new TextNode;
+                textNode->setText(tokensList.at(i + 1).trimmed());
+                textNode->setParent(stack.top());
+                stack.top()->childs.append(textNode);
+            }
         }
     }
     printTag(_htmlTag, 0);
 }
 
-Tag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
+HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
 {
-    Tag *tag = new Tag;
+    HtmlTag *tag = new HtmlTag;
     QString token;
     i++;
     tag->name = tokensList.at(i++);
@@ -201,16 +237,27 @@ Tag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
     return tag;
 }
 
-void HtmlParser::printTag(Tag *tag, int level)
+void HtmlParser::printTag(HtmlTag *tag, int level)
 {
-    QString tab;
-    for (int i = 0; i < level; ++i)
-        tab.append("    ");
-    qDebug() << tab + tag->toString();
-    if (!tag->text.isEmpty())
-        qDebug() << tab + tag->text;
+//    QString tab;
+//    for (int i = 0; i < level; ++i)
+//        tab.append("    ");
+//    qDebug() << tab + tag->toString();
+//    if (!tag->text.isEmpty())
+//        qDebug() << tab + tag->text;
 
-    foreach (Tag *t, tag->childs) {
-        printTag(t, level + 1);
+//    foreach (HtmlTag *t, tag->childs) {
+//        printTag(t, level + 1);
+//    }
+}
+
+void HtmlParser::search(QList<HtmlTag *> *tags, HtmlTag *tag, int &flag, std::function<bool (const HtmlTag *, int &)> callback)
+{
+    if (callback(tag, flag))
+        tags->append(tag);
+    foreach (HtmlNode *node, tag->childs) {
+        HtmlTag *t = dynamic_cast<HtmlTag*>(node);
+        if (t)
+            search(tags, t, flag, callback);
     }
 }
