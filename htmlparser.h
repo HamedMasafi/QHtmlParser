@@ -6,12 +6,16 @@
 #include <functional>
 
 class HtmlTag;
+class HtmlNode;
 class HtmlParser
 {
     QString _html;
     HtmlTag *_htmlTag;
+
 public:
     HtmlParser();
+    ~HtmlParser();
+
     void parse();
 
     QString html() const;
@@ -24,7 +28,8 @@ private:
     HtmlTag *parseTagBegin(QStringList &tokensList, int &i);
     void printTag(HtmlTag *tag, int level);
 
-    void search(QList<HtmlTag*> *tasg, HtmlTag *tag, int &flag, std::function<bool(const HtmlTag*, int&)> callback);
+    void search(QList<HtmlTag*> *tasg, HtmlTag *tag,
+                int &flag, std::function<bool(const HtmlTag*, int&)> callback);
 };
 
 #endif // HTMLPARSER_H

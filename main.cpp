@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QString>
+#include <cssparser.h>
 
 #include "htmlparser.h"
 #include "htmltag.h"
@@ -29,6 +30,20 @@ int main(int argc, char *argv[])
                    </body>
                    </html>)~");
 
+    QString css = QString::fromUtf8(R"~(
+                                    body{
+                                    color: red;
+                                    background-color: green;
+                                    }
+                                    /* comment outside - / */
+                                    .p{
+                                    background-image: url('image.png');
+                                    padding: 2px;
+                                    /*commend: none*/
+                                    }
+
+                                    )~");
+
     HtmlParser h;
     h.setHtml(html);
     h.parse();
@@ -37,7 +52,17 @@ int main(int argc, char *argv[])
     qDebug() << "-----------";
     qDebug() << p->outterHtml();
     qDebug() << p->innerText();
+    StyleTag *style = dynamic_cast<StyleTag*>(h.getElementsByTagName("style").first());
+    auto p_style = style->rules().findBySelector("p");
+    qDebug() << "rules for p is" << p_style->rules();
+    HtmlTag *htag = h.getElementsByTagName("html").first();
+    qDebug() << "CHANGE";
+    qDebug() << htag->outterHtml();
+    p_style->addRule("color", "red");
+    qDebug() << htag->outterHtml();
 
+    CssParser cp;
+    cp.parse(css);
 
     return a.exec();
 }

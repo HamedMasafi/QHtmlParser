@@ -10,6 +10,11 @@ HtmlParser::HtmlParser()
 
 }
 
+HtmlParser::~HtmlParser()
+{
+    delete _htmlTag;
+}
+
 QString HtmlParser::html() const
 {
     return _html;
@@ -35,7 +40,8 @@ QList<HtmlTag *> HtmlParser::getElementsByTagName(const QString tagName)
     QList<HtmlTag*> ret;
     int f = 0;
     search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-       return t->name.compare(tagName, Qt::CaseInsensitive);
+        qDebug() << "checked" << t->name();
+       return t->name().compare(tagName, Qt::CaseInsensitive) == 0;
     });
     return ret;
 }
@@ -45,7 +51,7 @@ QList<HtmlTag *> HtmlParser::getElementsByClassName(const QString className)
     QList<HtmlTag*> ret;
     int f = 0;
     search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-       return t->attributes.value("class").split(" ").contains(className, Qt::CaseInsensitive);
+       return t->hasClass(className);
     });
     return ret;
 }
@@ -53,6 +59,8 @@ QList<HtmlTag *> HtmlParser::getElementsByClassName(const QString className)
 
 void HtmlParser::parse()
 {
+    //TODO: fix this trick
+    _html = _html.replace("'rtl'", "\"rtl\"");
     QStringList tokensList;
     QString lastToken;
     QChar::Category lastCat = QChar::Mark_SpacingCombining;
@@ -89,7 +97,7 @@ void HtmlParser::parse()
             tokensList.append(ch);
             continue;
         }
-        if (ch == "\"") {
+        if (ch == "\""/* || (ch == "'" && !isInQuoto)*/) {
             if (!lastToken.isEmpty())
                 tokensList.append(lastToken);
             lastToken.clear();
@@ -138,6 +146,7 @@ void HtmlParser::parse()
                 doctype.append(token + " ");
         }
     }
+    qDebug() << "doc type is" << doctype;
     for (; i < tokensList.count(); ++i) {
         QString token = tokensList.at(i);
 
@@ -157,11 +166,11 @@ void HtmlParser::parse()
                         _htmlTag = tag;
                     if (stack.size()) {
                         tag->setParent(stack.top());
-                        stack.top()->childs.append(tag);
+                        stack.top()->addCHild(tag);
                     }
 
                     tags.append(tag);
-                    if (tag->hasCloseTag)
+                    if (tag->hasCloseTag())
                         stack.push(tag);
                 }
             }
@@ -173,20 +182,26 @@ void HtmlParser::parse()
             if (tokensList.size() > i + 1 && tokensList.at(i + 1) != "<") {
                 TextNode *textNode = new TextNode;
                 textNode->setText(tokensList.at(i + 1).trimmed());
-                textNode->setParent(stack.top());
-                stack.top()->childs.append(textNode);
+                stack.top()->addCHild(textNode);
             }
         }
     }
     printTag(_htmlTag, 0);
+    qDebug() << _htmlTag->outterHtml();
 }
 
 HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
 {
-    HtmlTag *tag = new HtmlTag;
+    HtmlTag *tag;
     QString token;
     i++;
-    tag->name = tokensList.at(i++);
+    auto tagName = tokensList.at(i++);
+    if (tagName.compare("style", Qt::CaseInsensitive) == 0)
+        tag = new StyleTag;
+    else
+        tag = new HtmlTag;
+
+    tag->setName(tagName);
     QMap<QString, QString> attrs;
     QString name, value;
     int step = 0;
@@ -203,6 +218,7 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
         do {
         if (i == tokensList.count()) {
             qDebug() << "Unexpected end of document";
+            delete tag;
             return nullptr;
         }
         token = tokensList.at(i++);
@@ -220,7 +236,8 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
             if (token == "=")
                 step++;
             else {
-                qDebug() << "error; token is" << token << "in" << step << "step";
+                qDebug() << "error; token is" << token << "in" << step << "step for" << tag->name();
+                delete tag;
                 return nullptr;
             }
             break;
@@ -228,13 +245,12 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
         case 2:
             step = 0;
             value = token;
-            attrs.insert(name, value);
+            tag->setAttribute(name, value);
             break;
         }
     } while (token != ">");
 
-    tag->hasCloseTag = (tokensList.at(i - 2) != "/");
-    tag->attributes = attrs;
+    tag->setHasCloseTag(tokensList.at(i - 2) != "/");
     i--;
     return tag;
 }
@@ -245,19 +261,18 @@ void HtmlParser::printTag(HtmlTag *tag, int level)
 //    for (int i = 0; i < level; ++i)
 //        tab.append("    ");
 //    qDebug() << tab + tag->toString();
-//    if (!tag->text.isEmpty())
-//        qDebug() << tab + tag->text;
 
 //    foreach (HtmlTag *t, tag->childs) {
 //        printTag(t, level + 1);
 //    }
 }
 
-void HtmlParser::search(QList<HtmlTag *> *tags, HtmlTag *tag, int &flag, std::function<bool (const HtmlTag *, int &)> callback)
+void HtmlParser::search(QList<HtmlTag *> *tags, HtmlTag *tag, int &flag,
+                        std::function<bool (const HtmlTag *, int &)> callback)
 {
     if (callback(tag, flag))
         tags->append(tag);
-    foreach (HtmlNode *node, tag->childs) {
+    foreach (HtmlNode *node, tag->childs()) {
         HtmlTag *t = dynamic_cast<HtmlTag*>(node);
         if (t)
             search(tags, t, flag, callback);
