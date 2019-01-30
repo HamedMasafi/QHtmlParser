@@ -108,8 +108,8 @@ std::vector<std::wstring> TokenParser::parse(const std::wstring &text) const
     for (std::size_t i = 0; i < text.length(); ++i) {
         auto ch = text.at(i);
         uchar cat = get_char_cat(ch);
-
-        if (isspace(ch))
+wcout << "char is" << text.substr(i, 1) << endl;
+        if (isspace(ch) || isblank(ch) || ch == '\n' || ch == '\r')
             continue;
 
         for (literal_t *literal : _literals) {
@@ -117,14 +117,14 @@ std::vector<std::wstring> TokenParser::parse(const std::wstring &text) const
             if (st == literal->begin) {
                 read_literal(text, last_token, i, literal);
 
+                if (literal->insert_into_tokens)
+                    tokens.push_back(literal->begin);
                 if (last_token.length()) {
-                    if (literal->insert_into_tokens)
-                        tokens.push_back(literal->begin);
                     tokens.push_back(last_token);
-                    if (literal->insert_into_tokens)
-                        tokens.push_back(literal->end);
                     i--;
                 }
+                if (literal->insert_into_tokens)
+                    tokens.push_back(literal->end);
                 last_token.clear();
                 continue;
             }
@@ -135,14 +135,18 @@ std::vector<std::wstring> TokenParser::parse(const std::wstring &text) const
             if (last_token.length()) {
                 tokens.push_back(last_token);
                 last_token.clear();
+                --i;
                 continue;
             }
         }
         if (isdigit(ch)) {
             read_digit(text, last_token, i);
-            tokens.push_back(last_token);
-            last_token.clear();
-            continue;
+            if (last_token.length()) {
+                tokens.push_back(last_token);
+                last_token.clear();
+                --i;
+                continue;
+            }
         }
 
         tokens.push_back(text.substr(i, 1));
@@ -154,11 +158,12 @@ std::vector<std::wstring> TokenParser::parse(const std::wstring &text) const
     for (wstring t : tokens) {
         tk.append(QString::fromStdWString(t));
     }
-    cout << "RESULT======================" <<endl;
+    wcout << L"RESULT======================" <<endl;
     wcout << text << endl;
-    cout << "TOKENS===========" << endl;
+    wcout << L"TOKENS===========" << endl;
     for (wstring t : tokens)
         wcout << L"\"" << t << L"\" ";
+//        wcout << t;
     wcout << flush;
 
     return tokens;
@@ -171,9 +176,9 @@ void TokenParser::read_alpha(const wstring &text, wstring &out, size_t &i) const
         i++;
     }
     out = text.substr(start, i - start);
-    wcout << L"last char is" << text.substr(i, 1) << endl;
-    if (out.length())
-        --i;
+    wcout << L"last char is" << text.substr(i, 1) << L"===" << out << endl;
+//    if (out.length())
+//        --i;
 }
 
 void TokenParser::read_digit(const wstring &text, wstring &out, size_t &i) const
@@ -191,6 +196,9 @@ void TokenParser::read_literal(const wstring &text, wstring &out, size_t &i, Tok
 //    i += literal.begin.length();
     size_t start = i;
     while (!end_of_literal) {
+        if (i + literal->end.length() > text.length())
+            return;
+
         wstring en = text.substr(i, literal->end.length());
         if (en.compare(literal->end) == 0)
             break;
