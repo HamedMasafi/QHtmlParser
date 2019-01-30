@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QString>
 #include <cssparser.h>
+#include <tokenparser.h>
 
 #include "htmlparser.h"
 #include "htmltag.h"
@@ -44,25 +45,29 @@ int main(int argc, char *argv[])
 
                                     )~");
 
-    HtmlParser h;
-    h.setHtml(html);
-    h.parse();
+//    HtmlParser h;
+//    h.setHtml(html);
+//    h.parse();
 
-    HtmlTag *p = h.getElementById("p1");
-    qDebug() << "-----------";
-    qDebug() << p->outterHtml();
-    qDebug() << p->innerText();
-    StyleTag *style = dynamic_cast<StyleTag*>(h.getElementsByTagName("style").first());
-    auto p_style = style->rules().findBySelector("p");
-    qDebug() << "rules for p is" << p_style->rules();
-    HtmlTag *htag = h.getElementsByTagName("html").first();
-    qDebug() << "CHANGE";
-    qDebug() << htag->outterHtml();
-    p_style->addRule("color", "red");
-    qDebug() << htag->outterHtml();
+//    HtmlTag *p = h.getElementById("p1");
+//    qDebug() << "-----------";
+//    qDebug() << p->outterHtml();
+//    qDebug() << p->innerText();
+//    StyleTag *style = dynamic_cast<StyleTag*>(h.getElementsByTagName("style").first());
+//    auto p_style = style->rules().findBySelector("p");
+//    qDebug() << "rules for p is" << p_style->rules();
+//    HtmlTag *htag = h.getElementsByTagName("html").first();
+//    qDebug() << "CHANGE";
+//    qDebug() << htag->outterHtml();
+//    p_style->addRule("color", "red");
+//    qDebug() << htag->outterHtml();
 
-    CssParser cp;
-    cp.parse(css);
+//    CssParser cp;
+//    cp.parse(css);
+
+    TokenParser tp;
+//    qDebug() <<
+                tp.parse(html.toStdWString());
 
     return a.exec();
 }
