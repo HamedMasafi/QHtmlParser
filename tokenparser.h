@@ -1,12 +1,12 @@
 #ifndef TOKENPARSER_H
 #define TOKENPARSER_H
 
-#include <QStringList>
-
+#include <functional>
 #include <vector>
 
-class TokenParser
+class token_parser
 {
+protected:
     struct comment_t {
         std::wstring begin;
         std::wstring end;
@@ -36,21 +36,33 @@ class TokenParser
         }
     };
 
-    std::vector<comment_t> _commants;
+    std::vector<comment_t*> _commants;
     std::vector<literal_t*> _literals;
 
     std::vector<std::wstring> _char_types;
+    std::vector<std::function<int (int)>> _check_fns;
 
 public:
-    TokenParser();
-    QStringList parse(const QString &text) const;
+    token_parser();
     std::vector<std::wstring> parse(const std::wstring &text) const;
 
-private:
-    void read_alpha(const std::wstring &text, std::wstring &out, size_t &i) const;
-    void read_digit(const std::wstring &text, std::wstring &out, size_t &i) const;
-    void read_literal(const std::wstring &text, std::wstring &out, size_t &i, literal_t *literal) const;
-    uchar get_char_cat(const wchar_t &wc) const;
+protected:
+    std::wstring read_until(const std::wstring &text, size_t &i, std::function<int(int)> fn) const;
+    std::wstring read_until(const std::wstring &text, size_t &i, const std::wstring &end) const;
+    bool is_valid_token(const std::wstring &token) const;
+};
+
+class html_parser : public token_parser
+{
+public:
+    html_parser();
+};
+
+class css_parser : public token_parser
+{
+public:
+    css_parser();
+    std::vector<std::wstring> parse(const std::wstring &text) const;
 };
 
 #endif // TOKENPARSER_H
