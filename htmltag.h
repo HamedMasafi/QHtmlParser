@@ -1,94 +1,90 @@
 #ifndef HTMLTAG_H
 #define HTMLTAG_H
 
+#include "global.h"
 #include "cssrules.h"
+#include <string>
+#include <vector>
 
-#include <QMap>
-#include <QString>
-
-class CssNode;
-class HtmlNode
+class css_node;
+class html_node
 {
-    HtmlNode *_parent;
+    html_node *_parent;
 
 public:
-    HtmlNode();
-    virtual ~HtmlNode();
-    HtmlNode *parent() const;
-    void setParent(HtmlNode *parent);
-    virtual QString outterHtml() const
+    html_node();
+    virtual ~html_node();
+    html_node *parent() const;
+    void set_parent(html_node *parent);
+    virtual std::wstring outter_html(print_type type = print_type::compact)
     {
-        return  "";
+        return  L"";
     }
-    virtual QString innerText() const
+    virtual std::wstring inner_text() const
     {
-        return  "";
+        return  L"";
     }
 
 };
 
-class TextNode : public HtmlNode
+class text_node : public html_node
 {
 
-    QString _text;
+    std::wstring _text;
 
 public:
-    TextNode();
-    QString text() const;
-    void setText(const QString &text);
-    QString outterHtml() const;
-    QString innerText() const;
+    text_node();
+    std::wstring text() const;
+    void setText(const std::wstring &text);
+    std::wstring outter_html(print_type type = print_type::compact);
+    std::wstring inner_text() const;
 };
 
-//class HtmlComment : public TextNode
-//{
-
-//};
-
-class HtmlTag : public HtmlNode
+class html_tag : public html_node
 {
 
-    QString _name;
-    QMap<QString, QString> _attributes;
-    QList<HtmlNode *> _childs;
+    std::map<std::wstring, std::wstring> _attributes;
+    std::vector<html_node *> _childs;
     bool _hasCloseTag;
-    CssNode *_css;
-    QStringList _classes;
+    css_node *_css;
+    std::vector<std::wstring> _classes;
 public:
-    HtmlTag();
-    virtual ~HtmlTag();
+    std::wstring name;
 
-    QString id() const;
-    QString attribute(const QString &name) const;
-    void setAttribute(const QString &name, const QString &value);
-    void addClass(const QString &name);
-    void removeClass(const QString &name);
-    bool hasClass(const QString &name) const;
+    html_tag();
+    virtual ~html_tag();
 
-    virtual void addCHild(HtmlNode *child);
+    std::wstring id();
+    std::wstring attr(const std::wstring &name);
+    void set_attr(const std::wstring &name, const std::wstring &value);
+    void add_class(const std::wstring &name);
+    void remove_class(const std::wstring &name);
+    bool has_class(const std::wstring &name) const;
 
-    QString outterHtml() const;
-    virtual QString innerHtml() const;
-    QString innerText() const;
-    QString name() const;
-    void setName(const QString &name);
+    virtual void add_child(html_node *child);
+
+    std::wstring outter_html(print_type type = print_type::compact);
+    virtual std::wstring inner_html(print_type type = print_type::compact) const;
+    std::wstring inner_text() const;
+//    std::wstring name() const;
+//    void setName(const std::wstring &name);
     bool hasCloseTag() const;
     void setHasCloseTag(bool hasCloseTag);
-    QList<HtmlNode *> childs() const;
+    std::vector<html_node *> childs() const;
 };
 
-class StyleTag : public HtmlTag
+class style_tag : public html_tag
 {
-    CssDoc _rules;
 
 public:
-    StyleTag();
+    css_doc rules;
+    style_tag();
 
-    void addCHild(HtmlNode *child);
-    CssDoc rules() const;
-    void setRules(const CssDoc &rules);
+    void add_child(html_node *child);
+//    css_doc rules() const;
+//    void setRules(const css_doc &rules);
 
-    QString innerHtml() const;
+    std::wstring inner_html(print_type type = print_type::compact) const;
 };
 
 #endif // HTMLTAG_H

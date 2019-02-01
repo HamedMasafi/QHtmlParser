@@ -1,20 +1,17 @@
 #ifndef CSSPARSER_H
 #define CSSPARSER_H
 
-#include "cssrules.h"
-#include <QString>
+#include <tokenparser.h>
 
-class CssNode;
-class CssParser
+class css_parser : public token_parser
 {
-    CssDoc _rules;
-
+private:
+    static int token(wint_t n);
 public:
-    CssParser();
-    void parse(const QString &css);
-    QMap<QString, QString> parseRules(const QString &rules) const;
-    CssDoc rules() const;
-    void setRules(const CssDoc &rules);
+    css_doc doc;
+    css_parser();
+    void parse();
+    virtual ~css_parser();
 };
 
 #endif // CSSPARSER_H

@@ -1,35 +1,32 @@
 #ifndef HTMLPARSER_H
 #define HTMLPARSER_H
 
-#include <QMap>
-#include <QString>
-#include <functional>
+#include "global.h"
+#include "tokenparser.h"
 
-class HtmlTag;
-class HtmlNode;
-class HtmlParser
+class html_tag;
+class html_parser : public token_parser
 {
-    QString _html;
-    HtmlTag *_htmlTag;
+    html_tag *_htmlTag;
+    std::wstring doctype;
 
 public:
-    HtmlParser();
-    ~HtmlParser();
+    html_parser();
+    virtual ~html_parser();
 
     void parse();
+    html_tag *root_tag() const {
+        return _htmlTag;
+    }
 
-    QString html() const;
-    void setHtml(const QString &html);
+//    html_tag *get_by_id(const std::wstring &id);
+//    std::vector<html_tag *> get_by_tag_name(const std::wstring &tag_name);
+//    std::vector<html_tag *> get_by_class_name(const std::wstring &class_name);
 
-    HtmlTag *getElementById(const QString id);
-    QList<HtmlTag *> getElementsByTagName(const QString tagName);
-    QList<HtmlTag *> getElementsByClassName(const QString className);
+    std::wstring to_string(print_type type = print_type::compact) const;
+    std::wstring to_string(html_tag *tag, int level, print_type type = print_type::compact) const;
 private:
-    HtmlTag *parseTagBegin(QStringList &tokensList, int &i);
-    void printTag(HtmlTag *tag, int level);
-
-    void search(QList<HtmlTag*> *tasg, HtmlTag *tag,
-                int &flag, std::function<bool(const HtmlTag*, int&)> callback);
+    html_tag *parse_tag_begin(std::vector<std::wstring> &tokensList, size_t &i);
 };
 
 #endif // HTMLPARSER_H

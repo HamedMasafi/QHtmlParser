@@ -1,17 +1,14 @@
-#include <QCoreApplication>
-#include <QString>
 #include <cssparser.h>
 #include <tokenparser.h>
+#include <iostream>
 
 #include "htmlparser.h"
 #include "htmltag.h"
-#include <QDebug>
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
 
-    QString html = QString::fromUtf8(R"~(<!DOCTYPE HTML>
+    auto html = LR"~(<!DOCTYPE HTML>
 <html>
 <head>
 <meta name="qrichtext" content="1" />
@@ -28,47 +25,55 @@ b { color: "red" }
 <img src="image.png" />
 </p>
 </body>
-</html>)~");
+</html>)~";
 
-    QString css = QString::fromUtf8(R"~(
+    auto css = LR"~(
 body{
 color: red;
 background-color: green;
 }
-/* comment outside - / */
-.p{
+body div{
+    display: block;
+}
+/*comment outside - /*/
+.p,div{
 background-image: url('image.png');
 padding: 2px;
-/*commend: none*/
+                                    border: 1px solid green;
+/*comment: none*/color:red;
 }
 
-)~");
+)~";
 
-//    HtmlParser h;
-//    h.setHtml(html);
-//    h.parse();
-
-//    HtmlTag *p = h.getElementById("p1");
-//    qDebug() << "-----------";
-//    qDebug() << p->outterHtml();
-//    qDebug() << p->innerText();
-//    StyleTag *style = dynamic_cast<StyleTag*>(h.getElementsByTagName("style").first());
-//    auto p_style = style->rules().findBySelector("p");
-//    qDebug() << "rules for p is" << p_style->rules();
-//    HtmlTag *htag = h.getElementsByTagName("html").first();
-//    qDebug() << "CHANGE";
-//    qDebug() << htag->outterHtml();
-//    p_style->addRule("color", "red");
-//    qDebug() << htag->outterHtml();
-
-//    CssParser cp;
-//    cp.parse(css);
+    auto print_list = [](std::vector<std::wstring> tokens){
+        std::cout << "==== TOKENS ====" << std::endl;
+        for (std::wstring t : tokens) {
+            std::wcout << L"\"" << t << L"\" ";
+        }
+        std::wcout << "================" << std::endl;
+    };
+    auto print_string = [](std::string title, std::wstring text){
+        std::cout << "==== " + title + " ====" << std::endl;
+        std::wcout << text << std::endl;
+        std::cout << "================" << std::endl;
+    };
 
     html_parser tp;
-//    tp.parse(html.toStdWString());
+    tp.setText(html);
+    tp.parse();
+//    qDebug() << QString::fromStdWString(tp.to_string());
 
     css_parser cp;
-    cp.parse(css.toStdWString());
+    cp.setText(css);
+    cp.parse();
 
-    return a.exec();
+    print_list(tp._tokens);
+    print_list(cp._tokens);
+    print_string("HTML compact", tp.to_string());
+    print_string("HTML formatted", tp.to_string(print_type::formatted));
+    print_string("CSS compact", cp.doc.to_string());
+    print_string("CSS formatted", cp.doc.to_string(print_type::formatted));
+
+    std::wcout << "END" << std::endl;
+    return EXIT_SUCCESS;
 }

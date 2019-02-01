@@ -1,209 +1,119 @@
 #include "htmlparser.h"
 #include "htmltag.h"
+#include "string_helper.h"
 
-#include <QDebug>
-#include <QStack>
-#include <QStringList>
+#include <stack>
+#include <vector>
+#include <wctype.h>
+#include <algorithm>
 
-HtmlParser::HtmlParser()
+using namespace std;
+
+html_parser::html_parser() : token_parser()
+{
+    _literals.push_back(new literal_t{L">",  L"<",  L"",     true,  true});
+    _literals.push_back(new literal_t{L"\"", L"\"", L"\\\"", false, true});
+    _literals.push_back(new literal_t{L"'",  L"'",  L"\\'",  false, true});
+
+    _check_fns.push_back(&iswalpha);
+    _check_fns.push_back(&iswdigit);
+
+    ignores.push_back('\r');
+    ignores.push_back('\n');
+}
+
+html_parser::~html_parser()
 {
 
 }
 
-HtmlParser::~HtmlParser()
+void html_parser::parse()
 {
-    delete _htmlTag;
-}
+    parse_tokens();
+    size_t i = 0;
 
-QString HtmlParser::html() const
-{
-    return _html;
-}
-
-void HtmlParser::setHtml(const QString &html)
-{
-    _html = html;
-}
-
-HtmlTag *HtmlParser::getElementById(const QString id)
-{
-    QList<HtmlTag*> ret;
-    int f = 0;
-    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-       return t->id() == id;
-    });
-    return ret.size() ? ret.first() : nullptr;
-}
-
-QList<HtmlTag *> HtmlParser::getElementsByTagName(const QString tagName)
-{
-    QList<HtmlTag*> ret;
-    int f = 0;
-    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-        qDebug() << "checked" << t->name();
-       return t->name().compare(tagName, Qt::CaseInsensitive) == 0;
-    });
-    return ret;
-}
-
-QList<HtmlTag *> HtmlParser::getElementsByClassName(const QString className)
-{
-    QList<HtmlTag*> ret;
-    int f = 0;
-    search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-       return t->hasClass(className);
-    });
-    return ret;
-}
-
-
-void HtmlParser::parse()
-{
-    //TODO: fix this trick
-    _html = _html.replace("'rtl'", "\"rtl\"");
-    QStringList tokensList;
-    QString lastToken;
-    QChar::Category lastCat = QChar::Mark_SpacingCombining;
-    bool isInQuoto = false;
-    bool isInTag = false;
-
-    for (int i = 0; i < _html.length(); ++i) {
-        QChar ch = _html.at(i);
-        if (ch.category() == QChar::Other_Control)
-            continue;
-
-        if (ch == "<") {
-            if (!isInTag) {
-                if (!lastToken.trimmed().isEmpty())
-                    tokensList.append(lastToken);
-            }
-            isInTag = true;
-            lastCat = ch.category();
-            lastToken.clear();
-            tokensList.append(ch);
-            continue;
-        }
-        if (!isInTag) {
-            lastToken.append(ch);
-            lastCat = ch.category();
-            continue;
-        }
-        if (ch == ">") {
-            isInTag = false;
-            lastCat = ch.category();
-            if (!lastToken.isEmpty())
-                tokensList.append(lastToken);
-            lastToken.clear();
-            tokensList.append(ch);
-            continue;
-        }
-        if (ch == "\""/* || (ch == "'" && !isInQuoto)*/) {
-            if (!lastToken.isEmpty())
-                tokensList.append(lastToken);
-            lastToken.clear();
-            isInQuoto = !isInQuoto;
-            lastCat = ch.category();
-
-            continue;
-        }
-        if (isInQuoto) {
-            lastToken.append(ch);
-            continue;
-        }
-
-        if (ch.isSpace()) {
-            if (!lastToken.isEmpty())
-                tokensList.append(lastToken);
-            lastCat = ch.category();
-            lastToken.clear();
-            continue;
-        }
-
-        if (lastCat != ch.category()) {
-            if (!lastToken.isEmpty())
-                tokensList.append(lastToken);
-            lastToken = ch;
-            lastCat = ch.category();
-        } else {
-            lastToken.append(ch);
-        }
-    }
-    qDebug() << _html;
-    qDebug() << "-----------";
-    qDebug() << tokensList;//.join("\n");
-
-    QList<HtmlTag*> tags;
-    QStack<HtmlTag*> stack;
+    stack<html_tag*> stack;
+    vector<html_tag*> tags;
     _htmlTag = nullptr;
-    QString doctype;
-    int i = 0;
 
-    if (tokensList.count() > 3 && tokensList.at(0) == "<" && tokensList.at(1) == "!") {
-        QString token;
-        while (token != ">") {
-            token = tokensList.at(++i);
-            if (token != ">")
-                doctype.append(token + " ");
+    if (_tokens.size() > 3 && _tokens.at(0) == L"<" && _tokens.at(1) == L"!") {
+        std::wstring token;
+        doctype.clear();
+        while (token != L">") {
+            token = _tokens.at(++i);
+            if (token != L">")
+                doctype.append(token + L" ");
         }
     }
-    qDebug() << "doc type is" << doctype;
-    for (; i < tokensList.count(); ++i) {
-        QString token = tokensList.at(i);
 
-        if (token == "<") {
-            isInTag = true;
-            if (tokensList.count() <= i + 1) {
-                qDebug() << "Unexpected end of document";
+    for (; i < _tokens.size(); ++i) {
+        wstring token = _tokens.at(i);
+
+        if (all_of(token.begin(), token.end(),
+                   [](wint_t n){return !iswprint(n);}))
+            continue;
+
+        if (token == L"<") {
+            if (_tokens.size() <= i + 1) {
+                _error_message = L"Unexpected end of document";
                 return;
             }
 
-            if (tokensList.at(i + 1) == "/") {
+            if (_tokens.at(i + 1) == L"/") {
                 stack.pop();
             } else {
-                HtmlTag *tag = parseTagBegin(tokensList, i);
+                html_tag *tag = parse_tag_begin(_tokens, i);
                 if (tag) {
                     if (!tags.size())
                         _htmlTag = tag;
                     if (stack.size()) {
-                        tag->setParent(stack.top());
-                        stack.top()->addCHild(tag);
+                        tag->set_parent(stack.top());
+                        stack.top()->add_child(tag);
                     }
 
-                    tags.append(tag);
+                    tags.push_back(tag);
                     if (tag->hasCloseTag())
                         stack.push(tag);
                 }
             }
         }
 
-        token = tokensList.at(i);
-        if (token == ">"){
-            isInTag = false;
-            if (tokensList.size() > i + 1 && tokensList.at(i + 1) != "<") {
-                TextNode *textNode = new TextNode;
-                textNode->setText(tokensList.at(i + 1).trimmed());
-                stack.top()->addCHild(textNode);
+        token = _tokens.at(i);
+        if (token == L">"){
+            if (_tokens.size() > i + 1 && _tokens.at(i + 1) != L"<") {
+                text_node *textNode = new text_node;
+                textNode->setText(string_helper::trim_copy(_tokens.at(i + 1)));
+                stack.top()->add_child(textNode);
             }
         }
     }
-    printTag(_htmlTag, 0);
-    qDebug() << _htmlTag->outterHtml();
 }
 
-HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
+wstring html_parser::to_string(print_type type) const
 {
-    HtmlTag *tag;
-    QString token;
-    i++;
-    auto tagName = tokensList.at(i++);
-    if (tagName.compare("style", Qt::CaseInsensitive) == 0)
-        tag = new StyleTag;
-    else
-        tag = new HtmlTag;
+    return L"<" + doctype + L">\n" + _htmlTag->outter_html(type);
+}
 
-    tag->setName(tagName);
-    QMap<QString, QString> attrs;
-    QString name, value;
+wstring html_parser::to_string(html_tag *tag, int level, print_type type) const
+{
+    return L"";
+}
+
+
+html_tag *html_parser::parse_tag_begin(std::vector<wstring> &tokensList, size_t &i)
+{
+    html_tag *tag;
+    wstring token;
+    i++;
+    auto tag_name = tokensList.at(i++);
+    if (tag_name == L"style")
+        tag = new style_tag;
+    else
+        tag = new html_tag;
+
+    tag->name = tag_name;
+//    map<wstring, wstring> attrs;
+    wstring name, value;
     int step = 0;
     /*
 
@@ -214,16 +124,16 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
      "
 
      */
-    if (tokensList.at(i) != ">")
+    if (tokensList.at(i) != L">")
         do {
-        if (i == tokensList.count()) {
-            qDebug() << "Unexpected end of document";
+        if (i == tokensList.size()) {
+            _error_message = L"Unexpected end of document";
             delete tag;
             return nullptr;
         }
         token = tokensList.at(i++);
 
-        if (token == ">")
+        if (token == L">")
             break;
 
         switch (step) {
@@ -233,10 +143,11 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
             break;
 
         case 1:
-            if (token == "=")
+            if (token == L"=")
                 step++;
             else {
-                qDebug() << "error; token is" << token << "in" << step << "step for" << tag->name();
+                _error_message = L"Unexpected " + token + L" token";
+                        //<< "error; token is" << token << "in" << step << "step for" << tag->name;
                 delete tag;
                 return nullptr;
             }
@@ -245,36 +156,12 @@ HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)
         case 2:
             step = 0;
             value = token;
-            tag->setAttribute(name, value);
+            tag->set_attr(name, value);
             break;
         }
-    } while (token != ">");
+    } while (token != L">");
 
-    tag->setHasCloseTag(tokensList.at(i - 2) != "/");
+    tag->setHasCloseTag(tokensList.at(i - 2) != L"/");
     i--;
     return tag;
-}
-
-void HtmlParser::printTag(HtmlTag *tag, int level)
-{
-//    QString tab;
-//    for (int i = 0; i < level; ++i)
-//        tab.append("    ");
-//    qDebug() << tab + tag->toString();
-
-//    foreach (HtmlTag *t, tag->childs) {
-//        printTag(t, level + 1);
-//    }
-}
-
-void HtmlParser::search(QList<HtmlTag *> *tags, HtmlTag *tag, int &flag,
-                        std::function<bool (const HtmlTag *, int &)> callback)
-{
-    if (callback(tag, flag))
-        tags->append(tag);
-    foreach (HtmlNode *node, tag->childs()) {
-        HtmlTag *t = dynamic_cast<HtmlTag*>(node);
-        if (t)
-            search(tags, t, flag, callback);
-    }
 }

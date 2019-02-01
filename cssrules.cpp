@@ -1,74 +1,64 @@
 #include "cssrules.h"
+#include <algorithm>
 
-#include <QDebug>
-
-
-QMap<QString, QString> CssNode::rules() const
+css_node::css_node()
 {
-    return _rules;
+
 }
 
-void CssNode::setRules(const QMap<QString, QString> &rules)
+void css_node::add_rule(const std::wstring &name, const std::wstring &value)
 {
-    _rules = rules;
+    _rules[name] = value;
 }
 
-void CssNode::addRule(const QString &name, const QString &value)
+std::wstring css_node::to_string(print_type type) const
 {
-    _rules.insert(name.toLower(), value);
-}
+    std::wstring ret;
 
-QString CssNode::selector() const
-{
-    return _selectors.join(", ");
-}
+    for (auto it = _rules.begin(); it != _rules.end(); ++it) {
+        if (type == print_type::formatted)
+            ret.append(L"\n    ");
 
-bool CssNode::hasSelector(const QString &selector)
-{
-    return _selectors.contains(selector, Qt::CaseInsensitive);
-}
+        if (ret.size() && type == print_type::compact)
+            ret.append(L";");
 
-QString CssNode::toString() const
-{
-    QString ret;
-    QMap<QString, QString>::const_iterator i;
-    for (i = _rules.constBegin(); i != _rules.constEnd(); ++i) {
-        if (!ret.isEmpty())
-            ret.append(";");
-        ret.append(i.key() + ":" + i.value());
+        if (type == print_type::formatted) {
+            ret.append(it->first + L": " + it->second);
+            ret.append(L";");
+        } else {
+            ret.append(it->first + L":" + it->second);
+        }
     }
-    return selector() + "{" + ret + "}";
-}
-
-CssNode::CssNode()
-{
-
-}
-
-CssNode::CssNode(const QString &selector)
-{
-    auto ps = selector.split(",");
-    foreach (QString p, ps)
-        _selectors.append(p.trimmed());
-}
-
-CssNode *CssDoc::findBySelector(const QString &selector)
-{
-    QList<CssNode*>::iterator i;
-    for (i = begin(); i != end(); ++i) {
-        qDebug() << "===" << (*i)->selector().split(" ");
-        if ((*i)->hasSelector(selector))
-            return *i;
+    std::wstring selectors;
+    for (std::wstring s : _selectors) {
+        if (selectors.size())
+            selectors.append(L", ");
+        selectors.append(s);
     }
-    return nullptr;
+
+    if (type == print_type::formatted)
+        ret.append(L"\n");
+    return selectors + L"{" + ret + L"}";
 }
 
-QString CssDoc::toString() const
+
+std::wstring css_doc::to_string(print_type type) const
 {
-    QString ret;
-    QList<CssNode*>::const_iterator i;
-    for (i = constBegin(); i != constEnd(); ++i) {
-        ret.append((*i)->toString() + "\n");
+    std::wstring ret;
+    for (auto i = cbegin(); i != cend(); ++i) {
+        ret.append((*i)->to_string(type));
+        if (type == print_type::formatted)
+            ret.append(L"\n");
     }
     return ret;
+}
+
+void css_node::set_attr(const std::wstring &name, const std::wstring &value)
+{
+    _rules[name] = value;
+}
+
+void css_node::add_selector(const std::wstring &name)
+{
+    _selectors.push_back(name);
 }

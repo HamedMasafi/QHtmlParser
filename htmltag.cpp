@@ -1,207 +1,222 @@
 #include "cssparser.h"
 #include "cssrules.h"
 #include "htmltag.h"
-#include <QDebug>
+#include "string_helper.h"
+#include "tokenparser.h"
 
-QString HtmlTag::name() const
-{
-    return _name;
-}
+#include <iostream>
+#include <algorithm>
 
-void HtmlTag::setName(const QString &name)
-{
-    _name = name;
-}
-
-bool HtmlTag::hasCloseTag() const
+bool html_tag::hasCloseTag() const
 {
     return _hasCloseTag;
 }
 
-void HtmlTag::setHasCloseTag(bool hasCloseTag)
+void html_tag::setHasCloseTag(bool hasCloseTag)
 {
     _hasCloseTag = hasCloseTag;
 }
 
-QList<HtmlNode *> HtmlTag::childs() const
+std::vector<html_node *> html_tag::childs() const
 {
     return _childs;
 }
 
-HtmlTag::HtmlTag() : HtmlNode (), _css(new CssNode)
+html_tag::html_tag() : html_node (), _css(new css_node)
 {
 
 }
 
-HtmlTag::~HtmlTag()
+html_tag::~html_tag()
 {
-    foreach (HtmlNode *child, _childs)
+    for (html_node *child : _childs)
         delete child;
 }
 
-QString HtmlTag::id() const
+std::wstring html_tag::id()
 {
-    return _attributes.value("id");
+    return _attributes[L"id"];
 }
 
-QString HtmlTag::attribute(const QString &name) const
+std::wstring html_tag::attr(const std::wstring &name)
 {
-    return _attributes.value(name);
+    return _attributes[name];
 }
 
-void HtmlTag::setAttribute(const QString &name, const QString &value)
+void html_tag::set_attr(const std::wstring &name, const std::wstring &value)
 {
-    auto n = name.toLower();
-    if (n == "style") {
-        CssParser p;
-        _css->setRules(p.parseRules(value));
-        qDebug() << "css" << _css->rules();
-    } else if (n == "class") {
-        _classes = value.split(" ");
+    auto n = name;
+    string_helper::tolower(n);
+    //TODO: parse css
+//    if (n == "style") {
+//        CssParser p;
+//        _css->setRules(p.parseRules(value));
+//        qDebug() << "css" << _css->rules();
+//    } else if (n == "class") {
+//        _classes = value.split(" ");
+//    }
+
+    _attributes[n] = value;
+}
+
+void html_tag::add_class(const std::wstring &name)
+{
+    if (std::find(_classes.begin(), _classes.end(), name) != _classes.end())
+        _classes.push_back(name);
+}
+
+void html_tag::remove_class(const std::wstring &name)
+{
+    _classes.erase(std::remove(_classes.begin(), _classes.end(), name),
+                   _classes.end());
+}
+
+bool html_tag::has_class(const std::wstring &name) const
+{
+    return (std::find(_classes.begin(), _classes.end(), name) != _classes.end());
+}
+
+void html_tag::add_child(html_node *child)
+{
+    _childs.push_back(child);
+    child->set_parent(this);
+}
+
+
+std::wstring html_tag::outter_html(print_type type)
+{
+    std::wstring html = L"<" + name;
+    std::map<std::wstring, std::wstring>::iterator it;
+    for(it = _attributes.begin(); it != _attributes.end(); ++it)
+        html.append(L" " + it->first + L"=\"" + it->second + L"\"");
+
+    if (_hasCloseTag)
+        html.append(L">");
+    else
+        html.append(L" />");
+
+    if (type == print_type::formatted)
+        html.append(L"\n");
+
+    html.append(inner_html(type));
+
+    if (type == print_type::formatted)
+        html.append(L"\n");
+    if (_hasCloseTag) {
+        html.append(L"</" + name + L">");
+        if (type == print_type::formatted)
+            html.append(L"\n");
     }
 
-    _attributes.insert(n, value);
-}
-
-void HtmlTag::addClass(const QString &name)
-{
-    if (!_classes.contains(name, Qt::CaseInsensitive))
-        _classes.append(name);
-}
-
-void HtmlTag::removeClass(const QString &name)
-{
-    _classes.removeOne(name);
-}
-
-bool HtmlTag::hasClass(const QString &name) const
-{
-    return _classes.contains(name, Qt::CaseInsensitive);
-}
-
-void HtmlTag::addCHild(HtmlNode *child)
-{
-    _childs.append(child);
-    child->setParent(this);
-}
-
-
-QString HtmlTag::outterHtml() const
-{
-    QString html = "<" + _name;
-    foreach (QString k, _attributes.keys())
-        html.append(QString(" %1=\"%2\"").arg(k).arg(_attributes.value(k)));
-    if (_hasCloseTag)
-        html.append(">");
-    else
-        html.append(" />");
-
-    html.append(innerHtml());
-
-    if (_hasCloseTag)
-        html.append("</" + _name + ">");
     return html;
 }
 
-QString HtmlTag::innerHtml() const
+std::wstring html_tag::inner_html(print_type type) const
 {
-    QString html;
-    QList<HtmlNode*>::const_iterator i;
-    for (i = _childs.constBegin(); i != _childs.constEnd(); ++i)
-        html.append((*i)->outterHtml() + "\n");
+    std::wstring html;
+    std::vector<html_node*>::const_iterator i;
+    for (i = _childs.cbegin(); i != _childs.cend(); ++i)
+        html.append((*i)->outter_html(type));
 
     return html;
 }
 
-QString HtmlTag::innerText() const
+std::wstring html_tag::inner_text() const
 {
-    QString html;
-    QList<HtmlNode*>::const_iterator i;
-    for (i = _childs.constBegin(); i != _childs.constEnd(); ++i) {
-        QString buffer = (*i)->innerText();
-        if (!buffer.isEmpty()) {
-            if (!buffer.endsWith(" "))
-                buffer.append(" ");
+    std::wstring html;
+    std::vector<html_node*>::const_iterator i;
+    for (i = _childs.cbegin(); i != _childs.cend(); ++i) {
+        std::wstring buffer = (*i)->inner_text();
+//        trim(buffer);
+        if (buffer != L"") {
+            if (buffer.substr(buffer.length() - 1, 1) != L" ")
+                buffer.append(L" ");
             html.append(buffer);
         }
     }
 
-    return html.trimmed();
+    return html;
 }
 
-HtmlNode::HtmlNode()
+html_node::html_node()
 {
 
 }
 
-HtmlNode::~HtmlNode()
+html_node::~html_node()
 {
 
 }
 
-HtmlNode *HtmlNode::parent() const
+html_node *html_node::parent() const
 {
     return _parent;
 }
 
-void HtmlNode::setParent(HtmlNode *parent)
+void html_node::set_parent(html_node *parent)
 {
     _parent = parent;
 }
 
-TextNode::TextNode() : HtmlNode ()
+text_node::text_node() : html_node ()
 {
 
 }
 
-QString TextNode::text() const
+std::wstring text_node::text() const
 {
     return _text;
 }
 
-void TextNode::setText(const QString &text)
+void text_node::setText(const std::wstring &text)
 {
     _text = text;
+    string_helper::replace(_text, L"\r", L"");
+    string_helper::replace(_text, L"\n", L"");
 }
 
-QString TextNode::outterHtml() const
+std::wstring text_node::outter_html(print_type type)
 {
     return _text;
 }
 
-QString TextNode::innerText() const
+std::wstring text_node::inner_text() const
 {
     return  _text;
 }
 
-CssDoc StyleTag::rules() const
+//css_doc style_tag::rules() const
+//{
+//    return _rules;
+//}
+
+//void style_tag::setRules(const css_doc &rules)
+//{
+//    _rules = rules;
+//}
+
+std::wstring style_tag::inner_html(print_type type) const
 {
-    return _rules;
+    if (rules.size())
+        return std::wstring();
+    else
+        return rules.to_string(type);
 }
 
-void StyleTag::setRules(const CssDoc &rules)
-{
-    _rules = rules;
-}
-
-QString StyleTag::innerHtml() const
-{
-    return _rules.toString();
-}
-
-StyleTag::StyleTag() : HtmlTag()
+style_tag::style_tag() : html_tag()
 {
 
 }
 
-void StyleTag::addCHild(HtmlNode *child)
+void style_tag::add_child(html_node *child)
 {
-    TextNode *tn = dynamic_cast<TextNode*>(child);
+    text_node *tn = dynamic_cast<text_node*>(child);
     if (tn) {
-        CssParser cp;
-        cp.parse(tn->text());
-        _rules = cp.rules();
+        css_parser cp;
+        cp.setText(tn->text());
+        cp.parse();
+        rules = cp.doc;
     } else {
-        qDebug() << "Appending non-text node to style tag was not allowed";
+        std::cout << "Appending non-text node to style tag was not allowed";
     }
 }
