@@ -1,9 +1,11 @@
 #include <cssparser.h>
 #include <tokenparser.h>
 #include <iostream>
+#include <algorithm>
 
 #include "htmlparser.h"
 #include "htmltag.h"
+#include "query_parser.h"
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +22,7 @@ b { color: "red" }
 <body style=" font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;">
 <p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">dfg</p>
 <img src="image.png" />
-<p id="p1">
+<p id="p1" class="par">
 <b>Sample</b> paragraph متن فارسی
 <img src="image.png" />
 </p>
@@ -61,7 +63,11 @@ padding: 2px;
     html_parser tp;
     tp.setText(html);
     tp.parse();
-//    qDebug() << QString::fromStdWString(tp.to_string());
+
+    auto tags = tp.query(L"p.par b, html body img, html head meta");
+    std::for_each(tags.begin(), tags.end(), [](html_tag *tag){
+        tag->set_attr(L"data-changed", L"true");
+    });
 
     css_parser cp;
     cp.setText(css);

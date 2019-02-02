@@ -52,9 +52,10 @@ void html_tag::set_attr(const std::wstring &name, const std::wstring &value)
 //        CssParser p;
 //        _css->setRules(p.parseRules(value));
 //        qDebug() << "css" << _css->rules();
-//    } else if (n == "class") {
-//        _classes = value.split(" ");
-//    }
+//    } else
+    if (n == L"class") {
+        _classes = string_helper::split(value, ' ');
+    }
 
     _attributes[n] = value;
 }

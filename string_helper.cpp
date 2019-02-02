@@ -1,5 +1,7 @@
 #include "string_helper.h"
 
+#include <sstream>
+#include <iostream>
 #include <algorithm>
 #include <wctype.h>
 
@@ -67,4 +69,14 @@ bool string_helper::replace(std::wstring& str, const std::wstring& from, const s
         return false;
     str.replace(start_pos, from.length(), to);
     return true;
+}
+
+std::vector<std::wstring> string_helper::split(std::wstring str, const wint_t &sep)
+{
+    std::wstring temp;
+    std::vector<std::wstring> parts;
+    std::wstringstream wss(str);
+    while(std::getline(wss, temp, L';'))
+        parts.push_back(temp);
+    return parts;
 }

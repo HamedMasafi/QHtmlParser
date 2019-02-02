@@ -47,8 +47,8 @@ class html_tag : public html_node
     std::vector<html_node *> _childs;
     bool _hasCloseTag;
     css_node *_css;
-    std::vector<std::wstring> _classes;
 public:
+    std::vector<std::wstring> _classes;
     std::wstring name;
 
     html_tag();

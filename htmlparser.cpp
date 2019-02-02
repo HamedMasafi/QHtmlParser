@@ -1,7 +1,9 @@
 #include "htmlparser.h"
 #include "htmltag.h"
+#include "query_parser.h"
 #include "string_helper.h"
 
+#include <iostream>
 #include <stack>
 #include <vector>
 #include <wctype.h>
@@ -87,6 +89,34 @@ void html_parser::parse()
             }
         }
     }
+}
+
+html_tag *html_parser::get_by_id(const wstring &id)
+{
+    auto tags = query(L"#" + id);
+    if (tags.size())
+        return tags.at(0);
+    else
+        return nullptr;
+}
+
+std::vector<html_tag *> html_parser::get_by_tag_name(const wstring &tag_name)
+{
+    return query(tag_name);
+}
+
+std::vector<html_tag *> html_parser::get_by_class_name(const wstring &class_name)
+{
+    return query(L"." + class_name);
+}
+
+std::vector<html_tag *> html_parser::query(const wstring &q)
+{
+    query_parser qp;
+    qp.setText(q);
+    qp.tag = _htmlTag;
+    qp.parse();
+    return qp.search();
 }
 
 wstring html_parser::to_string(print_type type) const

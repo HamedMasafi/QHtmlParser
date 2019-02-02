@@ -32,7 +32,7 @@ token_parser::~token_parser()
 
 std::vector<std::wstring> token_parser::parse_tokens()
 {
-
+    _tokens.clear();
     for (std::size_t i = 0; i < _text.length(); ++i) {
         std::wstring last_token;
         auto ch = static_cast<wint_t>(_text.at(i));
@@ -92,7 +92,7 @@ void token_parser::parse()
 wstring token_parser::read_until(const wstring &text, size_t &i, std::function<int (int)> fn) const
 {
     size_t start = i;
-    while (fn(text.at(i))) {
+    while (text.length() > i  && fn(text.at(i))) {
         i++;
     }
     return text.substr(start, i - start);

@@ -31,10 +31,10 @@ protected:
     std::vector<std::wstring> _char_types;
     std::vector<wint_t> ignores;
 
-    std::vector<std::function<int (wint_t)>> _check_fns;
 
-    std::wstring _text;
 public:
+    std::wstring _text;
+    std::vector<std::function<int (wint_t)>> _check_fns;
     std::vector<std::wstring> _tokens;
     token_parser();
     virtual ~token_parser();
