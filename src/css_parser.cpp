@@ -68,4 +68,25 @@ std::vector<css_node *> css_parser::find_match_selector(const std::wstring &sele
     return ret;
 }
 
+std::map<std::wstring, std::wstring> css_parser::parse_block()
+{
+    size_t i = 0;
+    std::map<std::wstring, std::wstring> ret;
+    while (true) {
+        if (_tokens.size() > i + 3)
+            break;
+        auto name = _tokens.at(i);
+        auto colon = _tokens.at(i + 1);
+        auto value = _tokens.at(i + 2);
+
+        if (_tokens.size() >= i + 3 && _tokens.at(i + 3) != L";") {
+            _error_message = L"Unecpected token: " + _tokens.at(i + 3);
+            break;
+        }
+        ret[name] = value;
+    }
+
+    return ret;
+}
+
 

@@ -12,6 +12,19 @@
 
 static html_parser html;
 static css_parser css;
+void print(std::vector<std::wstring> tokens){
+    std::cout << "==== TOKENS ====" << std::endl;
+    for (std::wstring t : tokens) {
+        std::wcout << L"\"" << t << L"\" ";
+    }
+    std::wcout << "================" << std::endl;
+}
+
+void print(std::string title, std::wstring text){
+    std::cout << "==== " + title + " ====" << std::endl;
+    std::wcout << text << std::endl;
+    std::cout << "================" << std::endl;
+};
 
 void init_test() {
     auto html_text = LR"~(<!DOCTYPE HTML>
@@ -58,40 +71,29 @@ void init_test() {
 TEST_CASE( "Init", "[init]" ) {
     init_test();
 }
-
-TEST_CASE("Html", "[html]"){
-    auto tags = html.query(L"p.par b");
-    std::for_each(tags.begin(), tags.end(), [](html_tag *tag){
-        std::wcout << tag->outter_html() << std::endl;
-        tag->set_attr(L"data-changed", L"true");
-    });
-    REQUIRE(1 == tags.size());
+TEST_CASE("String", "[string]") {
+    print("HTML Formatted", html.root_tag()->to_string(print_type::formatted));
+    print("HTML Compact", html.root_tag()->to_string(print_type::compact));
 }
 
-TEST_CASE("CSS Rules", "[css]") {
-    REQUIRE(4 == css.doc.size());
-    REQUIRE(1 == css.find_match_selector(L"body").size());
-    REQUIRE(2 == css.find_contains_selector(L".p").size());
-}
+//TEST_CASE("Html", "[html]"){
+//    auto tags = html.query(L"p.par b");
+//    REQUIRE(1 == tags.size());
+//}
+
+//TEST_CASE("CSS Rules", "[css]") {
+//    REQUIRE(4 == css.doc.size());
+//    REQUIRE(1 == css.find_match_selector(L"body").size());
+//    REQUIRE(2 == css.find_contains_selector(L".p").size());
+//}
+
 
 void debug() {
-    auto print_list = [](std::vector<std::wstring> tokens){
-        std::cout << "==== TOKENS ====" << std::endl;
-        for (std::wstring t : tokens) {
-            std::wcout << L"\"" << t << L"\" ";
-        }
-        std::wcout << "================" << std::endl;
-    };
-    auto print_string = [](std::string title, std::wstring text){
-        std::cout << "==== " + title + " ====" << std::endl;
-        std::wcout << text << std::endl;
-        std::cout << "================" << std::endl;
-    };
-    print_list(html.tokens());
-    print_list(css.tokens());
-    print_string("HTML compact", html.to_string());
-    print_string("HTML formatted", html.to_string(print_type::formatted));
-    print_string("CSS compact", css.doc.to_string());
-    print_string("CSS formatted", css.doc.to_string(print_type::formatted));
+    print(html.tokens());
+    print(css.tokens());
+    print("HTML compact", html.to_string());
+    print("HTML formatted", html.to_string(print_type::formatted));
+    print("CSS compact", css.doc.to_string());
+    print("CSS formatted", css.doc.to_string(print_type::formatted));
 }
 

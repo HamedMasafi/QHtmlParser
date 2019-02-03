@@ -22,7 +22,6 @@ public:
     std::vector<html_tag *> query(const std::wstring &q);
 
     std::wstring to_string(print_type type = print_type::compact) const;
-    std::wstring to_string(html_tag *tag, int level, print_type type = print_type::compact) const;
 private:
     void parse() override;
     html_tag *parse_tag_begin(std::vector<std::wstring> &tokensList, size_t &i);

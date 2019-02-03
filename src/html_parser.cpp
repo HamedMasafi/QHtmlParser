@@ -84,9 +84,12 @@ void html_parser::parse()
         token = _tokens.at(i);
         if (token == L">"){
             if (_tokens.size() > i + 1 && _tokens.at(i + 1) != L"<") {
-                text_node *textNode = new text_node;
-                textNode->setText(string_helper::trim_copy(_tokens.at(i + 1)));
-                stack.top()->add_child(textNode);
+                auto text = string_helper::trim_copy(_tokens.at(i + 1));
+                if (any_of(text.begin(), text.end(), &iswalpha)) {
+                    text_node *textNode = new text_node;
+                    textNode->setText(text);
+                    stack.top()->add_child(textNode);
+                }
             }
         }
     }
@@ -121,14 +124,8 @@ std::vector<html_tag *> html_parser::query(const wstring &q)
 
 wstring html_parser::to_string(print_type type) const
 {
-    return L"<" + doctype + L">\n" + _root_tag->outter_html(type);
+    return L"<" + doctype + L">\n" + _root_tag->to_string(type);
 }
-
-wstring html_parser::to_string(html_tag *tag, int level, print_type type) const
-{
-    return L"";
-}
-
 
 html_tag *html_parser::parse_tag_begin(std::vector<wstring> &tokensList, size_t &i)
 {

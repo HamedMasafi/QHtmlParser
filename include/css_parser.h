@@ -15,6 +15,7 @@ public:
 
     std::vector<css_node*> find_contains_selector(const std::wstring &selector);
     std::vector<css_node*> find_match_selector(const std::wstring &selector);
+    std::map<std::wstring, std::wstring> parse_block();
 private:
     void parse();
 };
