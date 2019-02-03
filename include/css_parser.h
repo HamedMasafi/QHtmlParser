@@ -12,6 +12,9 @@ public:
     css_doc doc;
     css_parser();
     virtual ~css_parser();
+
+    std::vector<css_node*> find_contains_selector(const std::wstring &selector);
+    std::vector<css_node*> find_match_selector(const std::wstring &selector);
 private:
     void parse();
 };

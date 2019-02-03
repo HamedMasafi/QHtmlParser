@@ -16,7 +16,6 @@ css_parser::css_parser()
 
 void css_parser::parse()
 {
-    parse_tokens();
     bool inside_block = false;
     css_node *last_node = new css_node;
 
@@ -49,6 +48,24 @@ void css_parser::parse()
 css_parser::~css_parser()
 {
 
+}
+
+std::vector<css_node *> css_parser::find_contains_selector(const std::wstring &selector)
+{
+    std::vector<css_node *> ret;
+    for (css_node *node : doc)
+        if (node->has_selector(selector))
+            ret.push_back(node);
+    return ret;
+}
+
+std::vector<css_node *> css_parser::find_match_selector(const std::wstring &selector)
+{
+    std::vector<css_node *> ret;
+    for (css_node *node : doc)
+        if (node->selectors().size() == 1 && node->has_selector(selector))
+            ret.push_back(node);
+    return ret;
 }
 
 

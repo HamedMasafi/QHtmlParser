@@ -32,7 +32,6 @@ html_tag *html_parser::root_tag() const {
 
 void html_parser::parse()
 {
-    parse_tokens();
     size_t i = 0;
 
     stack<html_tag*> stack;
@@ -47,6 +46,7 @@ void html_parser::parse()
             if (token != L">")
                 doctype.append(token + L" ");
         }
+        ++i;
     }
 
     for (; i < _tokens.size(); ++i) {
@@ -116,7 +116,6 @@ std::vector<html_tag *> html_parser::query(const wstring &q)
     query_parser qp;
     qp.set_text(q);
     qp.tag = _root_tag;
-    qp.parse();
     return qp.search();
 }
 

@@ -13,12 +13,11 @@ query_parser::query_parser() : token_parser()
 
 void query_parser::parse()
 {
-    auto tokens = parse_tokens();
     query_rule_t *last_rule = new query_rule_t;
 
     std::vector<query_rule_t*> rl;
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        auto t = tokens.at(i);
+    for (size_t i = 0; i < _tokens.size(); ++i) {
+        auto t = _tokens.at(i);
         if (t == L",") {
             rl.push_back(last_rule);
             rules.push_back(rl);
@@ -29,12 +28,12 @@ void query_parser::parse()
 
         if (t == L".") {
             ++i;
-            last_rule->classes.push_back(tokens.at(i));
+            last_rule->classes.push_back(_tokens.at(i));
             continue;
         }
         if (t == L"#") {
             ++i;
-            last_rule->id = tokens.at(i);
+            last_rule->id = _tokens.at(i);
             continue;
         }
         if (t == L">") {
@@ -47,6 +46,7 @@ void query_parser::parse()
         if (last_rule->is_valid())
             rl.push_back(last_rule);
         last_rule = new query_rule_t;
+        last_rule->is_child = false;
         last_rule->tag_name = t;
 
     }
