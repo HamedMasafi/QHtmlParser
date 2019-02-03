@@ -1,8 +1,8 @@
-#include "cssparser.h"
-#include "cssrules.h"
-#include "htmltag.h"
+#include "css_parser.h"
+#include "css_doc.h"
+#include "html_node.h"
 #include "string_helper.h"
-#include "tokenparser.h"
+#include "token_parser.h"
 
 #include <iostream>
 #include <algorithm>
@@ -214,8 +214,7 @@ void style_tag::add_child(html_node *child)
     text_node *tn = dynamic_cast<text_node*>(child);
     if (tn) {
         css_parser cp;
-        cp.setText(tn->text());
-        cp.parse();
+        cp.set_text(tn->text());
         rules = cp.doc;
     } else {
         std::cout << "Appending non-text node to style tag was not allowed";

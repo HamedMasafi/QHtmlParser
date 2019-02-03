@@ -1,4 +1,4 @@
-#include "htmltag.h"
+#include "html_node.h"
 #include "query_parser.h"
 
 #include <wctype.h>

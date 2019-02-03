@@ -1,7 +1,8 @@
 #ifndef CSSPARSER_H
 #define CSSPARSER_H
 
-#include <tokenparser.h>
+#include "css_doc.h"
+#include "token_parser.h"
 
 class css_parser : public token_parser
 {
@@ -10,8 +11,9 @@ private:
 public:
     css_doc doc;
     css_parser();
-    void parse();
     virtual ~css_parser();
+private:
+    void parse();
 };
 
 #endif // CSSPARSER_H

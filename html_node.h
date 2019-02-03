@@ -2,7 +2,7 @@
 #define HTMLTAG_H
 
 #include "global.h"
-#include "cssrules.h"
+#include "css_doc.h"
 #include <string>
 #include <vector>
 

@@ -1,4 +1,4 @@
-#include "cssparser.h"
+#include "css_parser.h"
 #include <wctype.h>
 
 int css_parser::token(wint_t n)
@@ -12,8 +12,6 @@ css_parser::css_parser()
     _literals.push_back(new literal_t{L"/*", L"*/", L"", false, false});
 
     _check_fns.push_back(&css_parser::token);
-
-    _commants.push_back(new comment_t{L"/*", L"*/"});
 }
 
 void css_parser::parse()

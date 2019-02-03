@@ -1,5 +1,5 @@
-#include "htmlparser.h"
-#include "htmltag.h"
+#include "html_parser.h"
+#include "html_node.h"
 #include "query_parser.h"
 #include "string_helper.h"
 
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-html_parser::html_parser() : token_parser()
+html_parser::html_parser() : token_parser(), _root_tag(nullptr)
 {
     _literals.push_back(new literal_t{L">",  L"<",  L"",     true,  true});
     _literals.push_back(new literal_t{L"\"", L"\"", L"\\\"", false, true});
@@ -19,14 +19,15 @@ html_parser::html_parser() : token_parser()
 
     _check_fns.push_back(&iswalpha);
     _check_fns.push_back(&iswdigit);
-
-    ignores.push_back('\r');
-    ignores.push_back('\n');
 }
 
 html_parser::~html_parser()
 {
+    delete _root_tag;
+}
 
+html_tag *html_parser::root_tag() const {
+    return _root_tag;
 }
 
 void html_parser::parse()
@@ -36,7 +37,7 @@ void html_parser::parse()
 
     stack<html_tag*> stack;
     vector<html_tag*> tags;
-    _htmlTag = nullptr;
+    _root_tag = nullptr;
 
     if (_tokens.size() > 3 && _tokens.at(0) == L"<" && _tokens.at(1) == L"!") {
         std::wstring token;
@@ -67,7 +68,7 @@ void html_parser::parse()
                 html_tag *tag = parse_tag_begin(_tokens, i);
                 if (tag) {
                     if (!tags.size())
-                        _htmlTag = tag;
+                        _root_tag = tag;
                     if (stack.size()) {
                         tag->set_parent(stack.top());
                         stack.top()->add_child(tag);
@@ -113,15 +114,15 @@ std::vector<html_tag *> html_parser::get_by_class_name(const wstring &class_name
 std::vector<html_tag *> html_parser::query(const wstring &q)
 {
     query_parser qp;
-    qp.setText(q);
-    qp.tag = _htmlTag;
+    qp.set_text(q);
+    qp.tag = _root_tag;
     qp.parse();
     return qp.search();
 }
 
 wstring html_parser::to_string(print_type type) const
 {
-    return L"<" + doctype + L">\n" + _htmlTag->outter_html(type);
+    return L"<" + doctype + L">\n" + _root_tag->outter_html(type);
 }
 
 wstring html_parser::to_string(html_tag *tag, int level, print_type type) const

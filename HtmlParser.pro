@@ -6,22 +6,22 @@ CONFIG -= qt
 
 SOURCES += \
         main.cpp \
-    $$PWD/htmlparser.cpp \
-    $$PWD/htmltag.cpp \
-    $$PWD/cssparser.cpp \
-    $$PWD/cssrules.cpp \
-    $$PWD/tokenparser.cpp \
+    html_parser.cpp \
     string_helper.cpp \
     query_parser.cpp \
-    html_tag_vector.cpp
+    html_tag_vector.cpp \
+    css_parser.cpp \
+    css_doc.cpp \
+    html_node.cpp \
+    token_parser.cpp
 
 HEADERS += \
-    $$PWD/htmlparser.h \
-    $$PWD/htmltag.h \
-    $$PWD/cssparser.h \
-    $$PWD/cssrules.h \
-    $$PWD/tokenparser.h \
+    html_parser.h \
     string_helper.h \
     global.h \
     query_parser.h \
-    html_tag_vector.h
+    html_tag_vector.h \
+    css_parser.h \
+    css_doc.h \
+    html_node.h \
+    token_parser.h
