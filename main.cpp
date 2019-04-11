@@ -35,11 +35,12 @@ body{
 color: red;
 background-color: green;
 }
-/* comment outside - / */
-.p{
+/*comment outside - /*/
+.p, div{
 background-image: url('image.png');
 padding: 2px;
-/*commend: none*/
+                                    border: 1px solid green;
+/*comment: none*/color:red;
 }
 
 )~");
@@ -65,10 +66,12 @@ padding: 2px;
 //    cp.parse(css);
 
     html_parser tp;
-//    tp.parse(html.toStdWString());
+    tp.setText(html.toStdWString());
+    tp.parse();
 
     css_parser cp;
-    cp.parse(css.toStdWString());
+    cp.setText(css.toStdWString());
+    cp.parse();
 
     return a.exec();
 }

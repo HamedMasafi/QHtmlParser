@@ -16,23 +16,31 @@ protected:
         std::wstring begin;
         std::wstring end;
         std::wstring ignore;
-        bool insert_into_tokens;
+        bool insert_begin_end;
+        bool insert_content;
 
         literal_t(std::wstring b, std::wstring e) {
             begin = b;
             end = e;
-            insert_into_tokens = false;
+            insert_begin_end = false;
         }
         literal_t(std::wstring b, std::wstring e, bool insert) {
             begin = b;
             end = e;
-            insert_into_tokens = insert;
+            insert_begin_end = insert;
         }
         literal_t(std::wstring b, std::wstring e, std::wstring i, bool insert) {
             begin = b;
             end = e;
             ignore = i;
-            insert_into_tokens = insert;
+            insert_begin_end = insert;
+        }
+        literal_t(std::wstring b, std::wstring e, std::wstring i, bool insert, bool c) {
+            begin = b;
+            end = e;
+            ignore = i;
+            insert_begin_end = insert;
+            insert_content = c;
         }
     };
 
@@ -40,15 +48,22 @@ protected:
     std::vector<literal_t*> _literals;
 
     std::vector<std::wstring> _char_types;
-    std::vector<std::function<int (int)>> _check_fns;
+    std::vector<std::function<int (wint_t)>> _check_fns;
 
+    std::wstring _text;
+    std::vector<std::wstring> _tokens;
 public:
     token_parser();
-    std::vector<std::wstring> parse(const std::wstring &text) const;
+    virtual ~token_parser();
+    std::vector<std::wstring> parse_tokens();
+    virtual void parse();
+
+    std::wstring text() const;
+    void setText(const std::wstring &text);
 
 protected:
     std::wstring read_until(const std::wstring &text, size_t &i, std::function<int(int)> fn) const;
-    std::wstring read_until(const std::wstring &text, size_t &i, const std::wstring &end) const;
+    std::wstring read_until(const std::wstring &text, size_t &i, const literal_t *lt) const;
     bool is_valid_token(const std::wstring &token) const;
 };
 
@@ -56,13 +71,16 @@ class html_parser : public token_parser
 {
 public:
     html_parser();
+    virtual ~html_parser();
 };
 
 class css_parser : public token_parser
 {
+private:
+    static int token(wint_t n);
 public:
     css_parser();
-    std::vector<std::wstring> parse(const std::wstring &text) const;
+    virtual ~css_parser();
 };
 
 #endif // TOKENPARSER_H

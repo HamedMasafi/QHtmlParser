@@ -5,7 +5,7 @@
 #include <QStack>
 #include <QStringList>
 
-HtmlParser::HtmlParser()
+HtmlParser::HtmlParser() : _html("")
 {
 
 }
@@ -40,7 +40,6 @@ QList<HtmlTag *> HtmlParser::getElementsByTagName(const QString tagName)
     QList<HtmlTag*> ret;
     int f = 0;
     search(&ret, _htmlTag, f, [=](const HtmlTag *t, int &) {
-        qDebug() << "checked" << t->name();
        return t->name().compare(tagName, Qt::CaseInsensitive) == 0;
     });
     return ret;
@@ -59,6 +58,9 @@ QList<HtmlTag *> HtmlParser::getElementsByClassName(const QString className)
 
 void HtmlParser::parse()
 {
+    if (_html == "")
+        return;
+
     //TODO: fix this trick
     _html = _html.replace("'rtl'", "\"rtl\"");
     QStringList tokensList;
@@ -128,9 +130,6 @@ void HtmlParser::parse()
             lastToken.append(ch);
         }
     }
-    qDebug() << _html;
-    qDebug() << "-----------";
-    qDebug() << tokensList;//.join("\n");
 
     QList<HtmlTag*> tags;
     QStack<HtmlTag*> stack;
@@ -146,7 +145,7 @@ void HtmlParser::parse()
                 doctype.append(token + " ");
         }
     }
-    qDebug() << "doc type is" << doctype;
+
     for (; i < tokensList.count(); ++i) {
         QString token = tokensList.at(i);
 
@@ -187,7 +186,6 @@ void HtmlParser::parse()
         }
     }
     printTag(_htmlTag, 0);
-    qDebug() << _htmlTag->outterHtml();
 }
 
 HtmlTag *HtmlParser::parseTagBegin(QStringList &tokensList, int &i)

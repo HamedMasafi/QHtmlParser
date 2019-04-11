@@ -55,7 +55,6 @@ void HtmlTag::setAttribute(const QString &name, const QString &value)
     if (n == "style") {
         CssParser p;
         _css->setRules(p.parseRules(value));
-        qDebug() << "css" << _css->rules();
     } else if (n == "class") {
         _classes = value.split(" ");
     }

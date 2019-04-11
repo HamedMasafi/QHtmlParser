@@ -56,7 +56,6 @@ CssNode *CssDoc::findBySelector(const QString &selector)
 {
     QList<CssNode*>::iterator i;
     for (i = begin(); i != end(); ++i) {
-        qDebug() << "===" << (*i)->selector().split(" ");
         if ((*i)->hasSelector(selector))
             return *i;
     }

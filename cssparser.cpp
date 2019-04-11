@@ -62,10 +62,6 @@ void CssParser::parse(const QString &css)
         }
         lastBlock.append(ch);
     }
-
-    foreach (CssNode *r, _rules) {
-        qDebug() << r->toString();
-    }
 }
 
 QMap<QString, QString> CssParser::parseRules(const QString &rules) const
